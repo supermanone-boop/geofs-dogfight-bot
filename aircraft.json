@@ -1,0 +1,25 @@
+{
+  "modelUrl": "https://raw.githubusercontent.com/supermanone-boop/Fighter-Jet/main/textured.glb",
+  "scale": 25.0,
+  "correctionHeading": 90,
+  "minAltitude": 50,
+  "maxPitch": 30,
+  "maxRoll": 45,
+  "ai": {
+    "speedBase": 250,
+    "speedMax": 450,
+    "escapeDistance": 800,
+    "climbFactor": 0.002,
+    "rollFactor": 0.5,
+    "chaseFactor": 0.08
+  },
+  "radar": {
+    "range": 3000,
+    "selfDotSize": 6,
+    "enemyDotSize": 6
+  },
+  "arrow": {
+    "size": 25,
+    "border": 12
+  }
+}
