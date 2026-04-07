@@ -17,7 +17,6 @@ function resetTarget() {
   target.climb = 0;
   target.roll = 0;
 }
-
 resetTarget();
 
 // ===== モデル =====
@@ -31,7 +30,7 @@ let model = scene.primitives.add(
   })
 );
 
-// ===== レーダーUI =====
+// ===== レーダー =====
 let radar = document.createElement("div");
 radar.style.position = "fixed";
 radar.style.right = "20px";
@@ -45,7 +44,6 @@ radar.style.zIndex = "9999";
 radar.style.boxShadow = "0 0 10px #0f0 inset";
 document.body.appendChild(radar);
 
-// 自機点
 let selfDot = document.createElement("div");
 selfDot.style.position = "absolute";
 selfDot.style.width = "6px";
@@ -57,7 +55,6 @@ selfDot.style.top = "50%";
 selfDot.style.transform = "translate(-50%, -50%)";
 radar.appendChild(selfDot);
 
-// 敵点
 let enemyDot = document.createElement("div");
 enemyDot.style.position = "absolute";
 enemyDot.style.width = "6px";
@@ -66,7 +63,21 @@ enemyDot.style.background = "red";
 enemyDot.style.borderRadius = "50%";
 radar.appendChild(enemyDot);
 
-// ===== RESETボタン =====
+// ===== 矢印 =====
+let arrow = document.createElement("div");
+arrow.style.position = "fixed";
+arrow.style.left = "50%";
+arrow.style.top = "50%";
+arrow.style.width = "0";
+arrow.style.height = "0";
+arrow.style.borderLeft = "12px solid transparent";
+arrow.style.borderRight = "12px solid transparent";
+arrow.style.borderBottom = "25px solid red";
+arrow.style.transformOrigin = "50% 80%";
+arrow.style.zIndex = "9999";
+document.body.appendChild(arrow);
+
+// ===== RESET =====
 let resetBtn = document.createElement("button");
 resetBtn.innerText = "RESET";
 resetBtn.style.position = "fixed";
@@ -87,7 +98,7 @@ function getGroundHeight(lat, lon) {
   return viewer.scene.globe.getHeight(carto) || 0;
 }
 
-// ===== 自機地上判定 =====
+// ===== 判定 =====
 function isPlayerOnGround() {
   const ground = getGroundHeight(ac.llaLocation[0], ac.llaLocation[1]);
   return ac.llaLocation[2] <= ground + 5;
@@ -104,7 +115,6 @@ function getDistance() {
 // ===== AI =====
 function updateTarget() {
 
-  // ===== 地上待機 =====
   if (isPlayerOnGround()) {
 
     const dLat = ac.llaLocation[0] - target.lat;
@@ -123,7 +133,6 @@ function updateTarget() {
 
   } else {
 
-    // ===== 常時追尾AI =====
     const dist = getDistance();
 
     const dLat = ac.llaLocation[0] - target.lat;
@@ -132,7 +141,6 @@ function updateTarget() {
     const angleToPlayer = Math.atan2(dLon, dLat) * 180 / Math.PI;
 
     if (dist < 800) {
-      // 回避
       const escape = angleToPlayer + 180;
 
       target.heading += (escape - target.heading) * 0.12;
@@ -141,13 +149,11 @@ function updateTarget() {
       target.roll = (escape - target.heading) * 0.7;
 
     } else {
-      // 常時追尾
 
       let diff = angleToPlayer - target.heading;
       diff = Math.atan2(Math.sin(diff * Math.PI/180), Math.cos(diff * Math.PI/180)) * 180/Math.PI;
 
       target.heading += diff * 0.08;
-
       target.speed = Math.min(450, 250 + dist * 0.05);
 
       const altDiff = ac.llaLocation[2] - target.alt;
@@ -165,7 +171,6 @@ function updateTarget() {
     target.alt += target.climb;
   }
 
-  // ===== モデル更新 =====
   const pos = Cesium.Cartesian3.fromDegrees(target.lon, target.lat, target.alt);
 
   const hpr = new Cesium.HeadingPitchRoll(
@@ -176,7 +181,6 @@ function updateTarget() {
 
   model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(pos, hpr);
 
-  // 発光
   model.colorBlendMode = Cesium.ColorBlendMode.MIX;
   model.colorBlendAmount = 0.7;
 }
@@ -208,10 +212,41 @@ function updateRadar() {
   enemyDot.style.opacity = dist > 3000 ? 0.3 : 1;
 }
 
+// ===== 矢印 =====
+function updateArrow() {
+
+  const dLat = (target.lat - ac.llaLocation[0]) * 111000;
+  const dLon = (target.lon - ac.llaLocation[1]) * 111000 * Math.cos(ac.llaLocation[0] * Math.PI / 180);
+
+  const heading = ac.htr[0] * Math.PI / 180;
+
+  let angle = Math.atan2(dLon, dLat) - heading;
+  let deg = angle * 180 / Math.PI;
+
+  arrow.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+
+  const dist = getDistance();
+
+  if (dist < 500) {
+    arrow.style.borderBottomColor = "red";
+  } else if (dist < 1500) {
+    arrow.style.borderBottomColor = "yellow";
+  } else {
+    arrow.style.borderBottomColor = "white";
+  }
+
+  if (dist < 200) {
+    arrow.style.display = "none";
+  } else {
+    arrow.style.display = "block";
+  }
+}
+
 // ===== ループ =====
 function loop() {
   updateTarget();
   updateRadar();
+  updateArrow();
   requestAnimationFrame(loop);
 }
 
