@@ -16,6 +16,12 @@ function resetTarget() {
   target.speed = 250;
   target.climb = 0;
   target.roll = 0;
+
+  // 🔥 追加（戦闘状態）
+  target.hp = 100;
+  target.flare = 0;
+  target.flareCooldown = 0;
+  target.evasion = 0;
 }
 resetTarget();
 
@@ -133,7 +139,24 @@ function updateTarget() {
 
   } else {
 
+    // 🔥 ミサイル回避判定
     const dist = getDistance();
+    const danger = dist < 1200;
+
+    if (danger && target.flareCooldown <= 0) {
+      target.flare = 40;
+      target.flareCooldown = 120;
+    }
+
+    if (target.flareCooldown > 0) target.flareCooldown--;
+
+    if (target.flare > 0) {
+      target.flare--;
+
+      target.heading += (Math.random() - 0.5) * 60;
+      target.roll = (Math.random() - 0.5) * 120;
+      target.climb += (Math.random() - 0.5) * 15;
+    }
 
     const dLat = ac.llaLocation[0] - target.lat;
     const dLon = ac.llaLocation[1] - target.lon;
@@ -141,12 +164,13 @@ function updateTarget() {
     const angleToPlayer = Math.atan2(dLon, dLat) * 180 / Math.PI;
 
     if (dist < 800) {
+
       const escape = angleToPlayer + 180;
 
-      target.heading += (escape - target.heading) * 0.12;
-      target.speed = 420;
-      target.climb += (Math.random() - 0.5) * 8;
-      target.roll = (escape - target.heading) * 0.7;
+      target.heading += (escape - target.heading) * 0.15;
+      target.speed = 480;
+      target.climb += (Math.random() - 0.5) * 20;
+      target.roll = (escape - target.heading) * 1.2;
 
     } else {
 
@@ -180,6 +204,13 @@ function updateTarget() {
   );
 
   model.modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(pos, hpr);
+
+  // 🔥 フレア可視化
+  if (target.flare > 0) {
+    model.color = Cesium.Color.ORANGE.withAlpha(0.7);
+  } else {
+    model.color = Cesium.Color.WHITE;
+  }
 
   model.colorBlendMode = Cesium.ColorBlendMode.MIX;
   model.colorBlendAmount = 0.7;
